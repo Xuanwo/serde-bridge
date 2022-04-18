@@ -1,4 +1,5 @@
 use std::fmt::{self, Debug, Display};
+use std::num::TryFromIntError;
 
 use anyhow::anyhow;
 use serde::{de, ser};
@@ -25,3 +26,9 @@ impl Display for Error {
 }
 
 impl std::error::Error for Error {}
+
+impl From<TryFromIntError> for Error {
+    fn from(v: TryFromIntError) -> Self {
+        Error(anyhow::anyhow!("convert from int: {:?}", v))
+    }
+}
