@@ -1,0 +1,649 @@
+use std::vec::IntoIter;
+
+use anyhow::anyhow;
+use indexmap::IndexMap;
+use serde::{
+    de,
+    de::{DeserializeOwned, DeserializeSeed, Visitor},
+};
+
+use crate::{Error, Value};
+
+/// Convert [`Value`] into `T: DeserializeOwned`.
+///
+/// # Examples
+///
+/// ```
+/// use serde_bridge::{from_value, Value};
+/// # use anyhow::Result;
+/// # fn main() -> Result<()> {
+/// let v: bool = from_value(Value::Bool(true))?;
+/// # assert!(v);
+/// # Ok(())
+/// # }
+/// ```
+pub fn from_value<T: DeserializeOwned>(v: Value) -> Result<T, Error> {
+    T::deserialize(Deserializer(v))
+}
+
+/// Convert [`Value`] into `T: DeserializeOwned`.
+///
+/// # Examples
+///
+/// ```
+/// use serde_bridge::{FromValue, Value};
+/// # use anyhow::Result;
+/// # fn main() -> Result<()>{
+/// let v = bool::from_value(Value::Bool(true))?;
+/// # assert!(v);
+/// # Ok(())
+/// # }
+/// ```
+pub trait FromValue {
+    fn from_value(v: Value) -> Result<Self, Error>
+    where
+        Self: Sized;
+}
+
+impl<T> FromValue for T
+where
+    T: DeserializeOwned,
+{
+    fn from_value(v: Value) -> Result<Self, Error> {
+        from_value(v)
+    }
+}
+
+struct Deserializer(Value);
+
+impl<'de> serde::Deserializer<'de> for Deserializer {
+    type Error = Error;
+
+    fn deserialize_any<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match &self.0 {
+            Value::Bool(_) => self.deserialize_bool(vis),
+            Value::I8(_) => self.deserialize_i8(vis),
+            Value::I16(_) => self.deserialize_i16(vis),
+            Value::I32(_) => self.deserialize_i32(vis),
+            Value::I64(_) => self.deserialize_i64(vis),
+            Value::I128(_) => self.deserialize_i128(vis),
+            Value::U8(_) => self.deserialize_u8(vis),
+            Value::U16(_) => self.deserialize_u16(vis),
+            Value::U32(_) => self.deserialize_u32(vis),
+            Value::U64(_) => self.deserialize_u64(vis),
+            Value::U128(_) => self.deserialize_u128(vis),
+            Value::F32(_) => self.deserialize_f32(vis),
+            Value::F64(_) => self.deserialize_f64(vis),
+            Value::Char(_) => self.deserialize_char(vis),
+            Value::Str(_) => self.deserialize_string(vis),
+            Value::Bytes(_) => self.deserialize_byte_buf(vis),
+            Value::None => self.deserialize_option(vis),
+            Value::Some(_) => self.deserialize_option(vis),
+            Value::Unit => self.deserialize_unit(vis),
+            _ => unimplemented!(),
+        }
+    }
+
+    fn deserialize_bool<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Bool(v) => vis.visit_bool(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_i8<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::I8(v) => vis.visit_i8(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_i16<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::I16(v) => vis.visit_i16(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_i32<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::I32(v) => vis.visit_i32(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_i64<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::I64(v) => vis.visit_i64(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_u8<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::U8(v) => vis.visit_u8(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_u16<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::U16(v) => vis.visit_u16(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_u32<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::U32(v) => vis.visit_u32(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_u64<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::U64(v) => vis.visit_u64(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_f32<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::F32(v) => vis.visit_f32(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_f64<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::F64(v) => vis.visit_f64(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_char<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Char(v) => vis.visit_char(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_str<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Str(v) => vis.visit_string(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_string<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Str(v) => vis.visit_string(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_bytes<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Bytes(v) => vis.visit_byte_buf(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_byte_buf<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Bytes(v) => vis.visit_byte_buf(v),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_option<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::None => vis.visit_none(),
+            Value::Some(v) => vis.visit_some(Deserializer(*v)),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_unit<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Unit => vis.visit_unit(),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_unit_struct<V>(self, name: &'static str, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::UnitStruct(vn) if vn == name => vis.visit_unit(),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_newtype_struct<V>(
+        self,
+        name: &'static str,
+        vis: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::NewtypeStruct(vn, vv) if vn == name => {
+                vis.visit_newtype_struct(Deserializer(*vv))
+            }
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_seq<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Seq(v) => vis.visit_seq(SeqAccessor::new(v)),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_tuple<V>(self, len: usize, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Tuple(v) if len == v.len() => vis.visit_seq(SeqAccessor::new(v)),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_tuple_struct<V>(
+        self,
+        name: &'static str,
+        len: usize,
+        vis: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::TupleStruct {
+                name: vn,
+                fields: vf,
+            } if name == vn && len == vf.len() => vis.visit_seq(SeqAccessor::new(vf)),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_map<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Map(v) => vis.visit_map(MapAccessor::new(v)),
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_struct<V>(
+        self,
+        name: &'static str,
+        fields: &'static [&'static str],
+        vis: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.0 {
+            Value::Struct {
+                name: vn,
+                fields: mut vf,
+            } if vn == name => {
+                let mut vs = Vec::with_capacity(fields.len());
+                for key in fields {
+                    // Use `remove` instead of `get` & `clone` here.
+                    // - As serde will make sure to not access the same field twice.
+                    // - The order of key is not needed to preserve during deserialize.
+                    match vf.remove(key) {
+                        Some(v) => vs.push(v),
+                        None => return Err(Error(anyhow!("field not exist"))),
+                    }
+                }
+                vis.visit_seq(SeqAccessor::new(vs))
+            }
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn deserialize_enum<V>(
+        self,
+        name: &'static str,
+        variants: &'static [&'static str],
+        vis: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        vis.visit_enum(EnumAccessor::new(name, variants, self.0))
+    }
+
+    fn deserialize_identifier<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        self.deserialize_str(vis)
+    }
+
+    fn deserialize_ignored_any<V>(self, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        self.deserialize_any(vis)
+    }
+}
+
+struct SeqAccessor {
+    elements: IntoIter<Value>,
+}
+
+impl SeqAccessor {
+    fn new(elements: Vec<Value>) -> Self {
+        Self {
+            elements: elements.into_iter(),
+        }
+    }
+}
+
+impl<'de> de::SeqAccess<'de> for SeqAccessor {
+    type Error = Error;
+
+    fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        match self.elements.next() {
+            None => Ok(None),
+            Some(v) => Ok(Some(seed.deserialize(Deserializer(v))?)),
+        }
+    }
+}
+
+struct MapAccessor {
+    cache_value: Option<Value>,
+    entries: indexmap::map::IntoIter<Value, Value>,
+}
+
+impl MapAccessor {
+    fn new(entries: IndexMap<Value, Value>) -> Self {
+        Self {
+            cache_value: None,
+            entries: entries.into_iter(),
+        }
+    }
+}
+impl<'de> de::MapAccess<'de> for MapAccessor {
+    type Error = Error;
+
+    fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
+    where
+        K: DeserializeSeed<'de>,
+    {
+        debug_assert!(
+            self.cache_value.is_none(),
+            "value for the last entry is not deserialized"
+        );
+
+        match self.entries.next() {
+            None => Ok(None),
+            Some((k, v)) => {
+                self.cache_value = Some(v);
+                Ok(Some(seed.deserialize(Deserializer(k))?))
+            }
+        }
+    }
+
+    fn next_value_seed<V>(&mut self, seed: V) -> Result<V::Value, Self::Error>
+    where
+        V: DeserializeSeed<'de>,
+    {
+        let value = self
+            .cache_value
+            .take()
+            .expect("value for current entry is missing");
+        seed.deserialize(Deserializer(value))
+    }
+}
+
+struct EnumAccessor {
+    name: &'static str,
+    variants: &'static [&'static str],
+    value: Value,
+}
+
+impl EnumAccessor {
+    fn new(name: &'static str, variants: &'static [&'static str], value: Value) -> Self {
+        Self {
+            name,
+            variants,
+            value,
+        }
+    }
+}
+
+impl<'de> de::EnumAccess<'de> for EnumAccessor {
+    type Error = Error;
+    type Variant = VariantAccessor;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
+    where
+        V: DeserializeSeed<'de>,
+    {
+        let value = match &self.value {
+            Value::UnitVariant {
+                name: vn,
+                variant_index: vvi,
+                variant: vv,
+            } if &self.name == vn && &self.variants[*vvi as usize] == vv => {
+                seed.deserialize(Deserializer(Value::Str(vv.to_string())))?
+            }
+            Value::TupleVariant {
+                name: vn,
+                variant_index: vvi,
+                variant: vv,
+                ..
+            } if &self.name == vn && &self.variants[*vvi as usize] == vv => {
+                seed.deserialize(Deserializer(Value::Str(vv.to_string())))?
+            }
+            Value::StructVariant {
+                name: vn,
+                variant_index: vvi,
+                variant: vv,
+                ..
+            } if &self.name == vn && &self.variants[*vvi as usize] == vv => {
+                seed.deserialize(Deserializer(Value::Str(vv.to_string())))?
+            }
+            Value::NewtypeVariant {
+                name: vn,
+                variant_index: vvi,
+                variant: vv,
+                ..
+            } if &self.name == vn && &self.variants[*vvi as usize] == vv => {
+                seed.deserialize(Deserializer(Value::Str(vv.to_string())))?
+            }
+            _ => return Err(Error(anyhow!("invalid type"))),
+        };
+
+        Ok((value, VariantAccessor::new(self.value)))
+    }
+}
+
+struct VariantAccessor {
+    value: Value,
+}
+
+impl VariantAccessor {
+    fn new(value: Value) -> Self {
+        Self { value }
+    }
+}
+
+impl<'de> de::VariantAccess<'de> for VariantAccessor {
+    type Error = Error;
+
+    fn unit_variant(self) -> Result<(), Self::Error> {
+        match self.value {
+            Value::UnitVariant { .. } => Ok(()),
+            _ => return Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value, Self::Error>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        match self.value {
+            Value::NewtypeVariant { value, .. } => Ok(seed.deserialize(Deserializer(*value))?),
+            _ => return Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn tuple_variant<V>(self, len: usize, vis: V) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.value {
+            Value::TupleVariant { fields, .. } if len == fields.len() => {
+                vis.visit_seq(SeqAccessor::new(fields))
+            }
+            _ => return Err(Error(anyhow!("invalid type"))),
+        }
+    }
+
+    fn struct_variant<V>(
+        self,
+        fields: &'static [&'static str],
+        vis: V,
+    ) -> Result<V::Value, Self::Error>
+    where
+        V: Visitor<'de>,
+    {
+        match self.value {
+            Value::Struct { fields: mut vf, .. } => {
+                let mut vs = Vec::with_capacity(fields.len());
+                for key in fields {
+                    // Use `remove` instead of `get` & `clone` here.
+                    // - As serde will make sure to not access the same field twice.
+                    // - The order of key is not needed to preserve during deserialize.
+                    match vf.remove(key) {
+                        Some(v) => vs.push(v),
+                        None => return Err(Error(anyhow!("field not exist"))),
+                    }
+                }
+                vis.visit_seq(SeqAccessor::new(vs))
+            }
+            _ => Err(Error(anyhow!("invalid type"))),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use indexmap::indexmap;
+
+    use super::*;
+    use crate::de::from_value;
+
+    #[derive(Debug, PartialEq, serde::Deserialize)]
+    struct TestStruct {
+        a: bool,
+        b: i32,
+        c: u64,
+        d: String,
+        e: f64,
+    }
+
+    #[test]
+    fn test_from_value() {
+        let v: bool = from_value(Value::Bool(true)).expect("must success");
+        assert!(v);
+
+        let v: TestStruct = from_value(Value::Struct {
+            name: "TestStruct",
+            fields: indexmap! {
+                "a" => Value::Bool(true),
+                "b" => Value::I32(1),
+                "c" => Value::U64(2),
+                "d" => Value::Str("Hello, World!".to_string()),
+                "e" => Value::F64(4.5)
+            },
+        })
+        .expect("must success");
+        assert_eq!(
+            v,
+            TestStruct {
+                a: true,
+                b: 1,
+                c: 2,
+                d: "Hello, World!".to_string(),
+                e: 4.5
+            }
+        )
+    }
+}
