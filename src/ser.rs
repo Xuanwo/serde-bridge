@@ -1,4 +1,8 @@
 use indexmap::IndexMap;
+use serde::ser::{
+    SerializeMap, SerializeSeq, SerializeStruct, SerializeStructVariant, SerializeTuple,
+    SerializeTupleStruct, SerializeTupleVariant,
+};
 use serde::{ser, Serialize};
 
 use crate::{Error, Value};
@@ -43,6 +47,109 @@ where
 {
     fn into_value(self) -> Result<Value, Error> {
         into_value(self)
+    }
+}
+
+impl serde::Serialize for Value {
+    fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Value::Bool(v) => s.serialize_bool(*v),
+            Value::I8(v) => s.serialize_i8(*v),
+            Value::I16(v) => s.serialize_i16(*v),
+            Value::I32(v) => s.serialize_i32(*v),
+            Value::I64(v) => s.serialize_i64(*v),
+            Value::I128(v) => s.serialize_i128(*v),
+            Value::U8(v) => s.serialize_u8(*v),
+            Value::U16(v) => s.serialize_u16(*v),
+            Value::U32(v) => s.serialize_u32(*v),
+            Value::U64(v) => s.serialize_u64(*v),
+            Value::U128(v) => s.serialize_u128(*v),
+            Value::F32(v) => s.serialize_f32(*v),
+            Value::F64(v) => s.serialize_f64(*v),
+            Value::Char(v) => s.serialize_char(*v),
+            Value::Str(v) => s.serialize_str(v),
+            Value::Bytes(v) => s.serialize_bytes(v),
+            Value::None => s.serialize_none(),
+            Value::Some(v) => s.serialize_some(v),
+            Value::Unit => s.serialize_unit(),
+            Value::UnitStruct(name) => s.serialize_unit_struct(name),
+            Value::UnitVariant {
+                name,
+                variant_index,
+                variant,
+            } => s.serialize_unit_variant(name, *variant_index, variant),
+            Value::NewtypeStruct(name, value) => s.serialize_newtype_struct(name, value),
+            Value::NewtypeVariant {
+                name,
+                variant_index,
+                variant,
+                value,
+            } => s.serialize_newtype_variant(name, *variant_index, variant, value),
+            Value::Seq(v) => {
+                let mut seq = s.serialize_seq(Some(v.len()))?;
+                for i in v {
+                    seq.serialize_element(i)?;
+                }
+                seq.end()
+            }
+            Value::Tuple(v) => {
+                let mut tuple = s.serialize_tuple(v.len())?;
+                for i in v {
+                    tuple.serialize_element(i)?;
+                }
+                tuple.end()
+            }
+            Value::TupleStruct { name, fields } => {
+                let mut se = s.serialize_tuple_struct(name, fields.len())?;
+                for i in fields {
+                    se.serialize_field(i)?;
+                }
+                se.end()
+            }
+            Value::TupleVariant {
+                name,
+                variant_index,
+                variant,
+                fields,
+            } => {
+                let mut se =
+                    s.serialize_tuple_variant(name, *variant_index, variant, fields.len())?;
+                for i in fields {
+                    se.serialize_field(i)?;
+                }
+                se.end()
+            }
+            Value::Map(map) => {
+                let mut se = s.serialize_map(Some(map.len()))?;
+                for (k, v) in map {
+                    se.serialize_entry(k, v)?;
+                }
+                se.end()
+            }
+            Value::Struct { name, fields } => {
+                let mut se = s.serialize_struct(name, fields.len())?;
+                for (k, v) in fields {
+                    se.serialize_field(k, v)?;
+                }
+                se.end()
+            }
+            Value::StructVariant {
+                name,
+                variant_index,
+                variant,
+                fields,
+            } => {
+                let mut se =
+                    s.serialize_struct_variant(name, *variant_index, variant, fields.len())?;
+                for (k, v) in fields {
+                    se.serialize_field(k, v)?;
+                }
+                se.end()
+            }
+        }
     }
 }
 
@@ -509,6 +616,7 @@ impl ser::SerializeStructVariant for StructVariantSerializer {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
     use indexmap::indexmap;
 
     use super::*;
@@ -547,5 +655,30 @@ mod tests {
                 }
             }
         )
+    }
+
+    #[test]
+    fn test_serialize() -> Result<()> {
+        let raw = TestStruct {
+            a: true,
+            b: 1,
+            c: 2,
+            d: "Hello, World!".to_string(),
+            e: 4.5,
+        };
+        let value = Value::Struct {
+            name: "TestStruct",
+            fields: indexmap! {
+                "a" => Value::Bool(true),
+                "b" => Value::I32(1),
+                "c" => Value::U64(2),
+                "d" => Value::Str("Hello, World!".to_string()),
+                "e" => Value::F64(4.5)
+            },
+        };
+
+        assert_eq!(serde_json::to_string(&raw)?, serde_json::to_string(&value)?);
+
+        Ok(())
     }
 }
