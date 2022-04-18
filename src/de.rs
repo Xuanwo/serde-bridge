@@ -1,9 +1,10 @@
+use std::fmt::Formatter;
 use std::vec::IntoIter;
 
 use anyhow::anyhow;
 use indexmap::IndexMap;
-use serde::de;
-use serde::de::{DeserializeOwned, DeserializeSeed, Visitor};
+use serde::de::{DeserializeOwned, DeserializeSeed, MapAccess, SeqAccess, Visitor};
+use serde::{de, Deserialize};
 
 use crate::{Error, Value};
 
@@ -52,6 +53,204 @@ where
     }
 }
 
+struct ValueVisitor;
+
+impl<'de> Visitor<'de> for ValueVisitor {
+    type Value = Value;
+
+    fn expecting(&self, f: &mut Formatter) -> std::fmt::Result {
+        write!(f, "expecting visitor")
+    }
+
+    fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Bool(v))
+    }
+
+    fn visit_i8<E>(self, v: i8) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::I8(v))
+    }
+
+    fn visit_i16<E>(self, v: i16) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::I16(v))
+    }
+
+    fn visit_i32<E>(self, v: i32) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::I32(v))
+    }
+
+    fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::I64(v))
+    }
+
+    fn visit_u8<E>(self, v: u8) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::U8(v))
+    }
+
+    fn visit_u16<E>(self, v: u16) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::U16(v))
+    }
+
+    fn visit_u32<E>(self, v: u32) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::U32(v))
+    }
+
+    fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::U64(v))
+    }
+
+    fn visit_f32<E>(self, v: f32) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::F32(v))
+    }
+
+    fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::F64(v))
+    }
+
+    fn visit_char<E>(self, v: char) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Char(v))
+    }
+
+    fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Str(v.to_string()))
+    }
+
+    fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Str(v.to_string()))
+    }
+
+    fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Str(v))
+    }
+
+    fn visit_bytes<E>(self, v: &[u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Bytes(v.to_vec()))
+    }
+
+    fn visit_borrowed_bytes<E>(self, v: &'de [u8]) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Bytes(v.to_vec()))
+    }
+
+    fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Bytes(v))
+    }
+
+    fn visit_none<E>(self) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::None)
+    }
+
+    fn visit_some<D>(self, d: D) -> Result<Self::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Value::Some(Box::new(d.deserialize_any(ValueVisitor)?)))
+    }
+
+    fn visit_unit<E>(self) -> Result<Self::Value, E>
+    where
+        E: de::Error,
+    {
+        Ok(Value::Unit)
+    }
+
+    fn visit_newtype_struct<D>(self, d: D) -> Result<Self::Value, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        Ok(Value::NewtypeStruct(
+            "",
+            Box::new(d.deserialize_any(ValueVisitor)?),
+        ))
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+    where
+        A: SeqAccess<'de>,
+    {
+        let mut vec = Vec::new();
+        while let Some(v) = seq.next_element()? {
+            vec.push(v);
+        }
+        Ok(Value::Seq(vec))
+    }
+
+    fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+    where
+        A: MapAccess<'de>,
+    {
+        let mut im = IndexMap::new();
+        while let Some((k, v)) = map.next_entry()? {
+            im.insert(k, v);
+        }
+        Ok(Value::Map(im))
+    }
+}
+
+impl<'de> Deserialize<'de> for Value {
+    fn deserialize<D>(d: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        d.deserialize_any(ValueVisitor)
+    }
+}
+
 struct Deserializer(Value);
 
 impl<'de> serde::Deserializer<'de> for Deserializer {
@@ -91,7 +290,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Bool(v) => vis.visit_bool(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -101,7 +300,16 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::I8(v) => vis.visit_i8(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::I16(v) => vis.visit_i8(i8::try_from(v)?),
+            Value::I32(v) => vis.visit_i8(i8::try_from(v)?),
+            Value::I64(v) => vis.visit_i8(i8::try_from(v)?),
+            Value::I128(v) => vis.visit_i8(i8::try_from(v)?),
+            Value::U8(v) => vis.visit_i8(i8::try_from(v)?),
+            Value::U16(v) => vis.visit_i8(i8::try_from(v)?),
+            Value::U32(v) => vis.visit_i8(i8::try_from(v)?),
+            Value::U64(v) => vis.visit_i8(i8::try_from(v)?),
+            Value::U128(v) => vis.visit_i8(i8::try_from(v)?),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect i8", v))),
         }
     }
 
@@ -110,8 +318,17 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::I8(v) => vis.visit_i16(i16::from(v)),
             Value::I16(v) => vis.visit_i16(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::I32(v) => vis.visit_i16(i16::try_from(v)?),
+            Value::I64(v) => vis.visit_i16(i16::try_from(v)?),
+            Value::I128(v) => vis.visit_i16(i16::try_from(v)?),
+            Value::U8(v) => vis.visit_i16(i16::from(v)),
+            Value::U16(v) => vis.visit_i16(i16::try_from(v)?),
+            Value::U32(v) => vis.visit_i16(i16::try_from(v)?),
+            Value::U64(v) => vis.visit_i16(i16::try_from(v)?),
+            Value::U128(v) => vis.visit_i16(i16::try_from(v)?),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect i16", v))),
         }
     }
 
@@ -120,8 +337,17 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::I8(v) => vis.visit_i32(i32::from(v)),
+            Value::I16(v) => vis.visit_i32(i32::from(v)),
             Value::I32(v) => vis.visit_i32(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::I64(v) => vis.visit_i32(i32::try_from(v)?),
+            Value::I128(v) => vis.visit_i32(i32::try_from(v)?),
+            Value::U8(v) => vis.visit_i32(i32::from(v)),
+            Value::U16(v) => vis.visit_i32(i32::from(v)),
+            Value::U32(v) => vis.visit_i32(i32::try_from(v)?),
+            Value::U64(v) => vis.visit_i32(i32::try_from(v)?),
+            Value::U128(v) => vis.visit_i32(i32::try_from(v)?),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -130,8 +356,17 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::I8(v) => vis.visit_i64(i64::from(v)),
+            Value::I16(v) => vis.visit_i64(i64::from(v)),
+            Value::I32(v) => vis.visit_i64(i64::from(v)),
             Value::I64(v) => vis.visit_i64(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::I128(v) => vis.visit_i64(i64::try_from(v)?),
+            Value::U8(v) => vis.visit_i64(i64::from(v)),
+            Value::U16(v) => vis.visit_i32(i32::from(v)),
+            Value::U32(v) => vis.visit_i64(i64::from(v)),
+            Value::U64(v) => vis.visit_i64(i64::try_from(v)?),
+            Value::U128(v) => vis.visit_i64(i64::try_from(v)?),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect i64", v))),
         }
     }
 
@@ -140,8 +375,17 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::I8(v) => vis.visit_u8(u8::try_from(v)?),
+            Value::I16(v) => vis.visit_u8(u8::try_from(v)?),
+            Value::I32(v) => vis.visit_u8(u8::try_from(v)?),
+            Value::I64(v) => vis.visit_u8(u8::try_from(v)?),
+            Value::I128(v) => vis.visit_u8(u8::try_from(v)?),
             Value::U8(v) => vis.visit_u8(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::U16(v) => vis.visit_u8(u8::try_from(v)?),
+            Value::U32(v) => vis.visit_u8(u8::try_from(v)?),
+            Value::U64(v) => vis.visit_u8(u8::try_from(v)?),
+            Value::U128(v) => vis.visit_u8(u8::try_from(v)?),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect u8", v))),
         }
     }
 
@@ -150,8 +394,17 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::I8(v) => vis.visit_u16(u16::try_from(v)?),
+            Value::I16(v) => vis.visit_u16(u16::try_from(v)?),
+            Value::I32(v) => vis.visit_u16(u16::try_from(v)?),
+            Value::I64(v) => vis.visit_u16(u16::try_from(v)?),
+            Value::I128(v) => vis.visit_u16(u16::try_from(v)?),
+            Value::U8(v) => vis.visit_u16(u16::from(v)),
             Value::U16(v) => vis.visit_u16(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::U32(v) => vis.visit_u16(u16::try_from(v)?),
+            Value::U64(v) => vis.visit_u16(u16::try_from(v)?),
+            Value::U128(v) => vis.visit_u16(u16::try_from(v)?),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect u16", v))),
         }
     }
 
@@ -160,8 +413,17 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::I8(v) => vis.visit_u32(u32::try_from(v)?),
+            Value::I16(v) => vis.visit_u32(u32::try_from(v)?),
+            Value::I32(v) => vis.visit_u32(u32::try_from(v)?),
+            Value::I64(v) => vis.visit_u32(u32::try_from(v)?),
+            Value::I128(v) => vis.visit_u32(u32::try_from(v)?),
+            Value::U8(v) => vis.visit_u32(u32::from(v)),
+            Value::U16(v) => vis.visit_u32(u32::from(v)),
             Value::U32(v) => vis.visit_u32(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::U64(v) => vis.visit_u32(u32::try_from(v)?),
+            Value::U128(v) => vis.visit_u32(u32::try_from(v)?),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect u32", v))),
         }
     }
 
@@ -170,8 +432,17 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::I8(v) => vis.visit_u64(u64::try_from(v)?),
+            Value::I16(v) => vis.visit_u64(u64::try_from(v)?),
+            Value::I32(v) => vis.visit_u64(u64::try_from(v)?),
+            Value::I64(v) => vis.visit_u64(u64::try_from(v)?),
+            Value::I128(v) => vis.visit_u64(u64::try_from(v)?),
+            Value::U8(v) => vis.visit_u64(u64::from(v)),
+            Value::U16(v) => vis.visit_u64(u64::from(v)),
+            Value::U32(v) => vis.visit_u64(u64::from(v)),
             Value::U64(v) => vis.visit_u64(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::U128(v) => vis.visit_u64(u64::try_from(v)?),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect u64", v))),
         }
     }
 
@@ -181,7 +452,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::F32(v) => vis.visit_f32(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect f32", v))),
         }
     }
 
@@ -191,7 +462,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::F64(v) => vis.visit_f64(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect f64", v))),
         }
     }
 
@@ -201,7 +472,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Char(v) => vis.visit_char(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -211,7 +482,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Str(v) => vis.visit_string(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -221,7 +492,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Str(v) => vis.visit_string(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -231,7 +502,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Bytes(v) => vis.visit_byte_buf(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -241,7 +512,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Bytes(v) => vis.visit_byte_buf(v),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -252,7 +523,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         match self.0 {
             Value::None => vis.visit_none(),
             Value::Some(v) => vis.visit_some(Deserializer(*v)),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -262,7 +533,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Unit => vis.visit_unit(),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -272,7 +543,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::UnitStruct(vn) if vn == name => vis.visit_unit(),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -288,7 +559,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
             Value::NewtypeStruct(vn, vv) if vn == name => {
                 vis.visit_newtype_struct(Deserializer(*vv))
             }
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -298,7 +569,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Seq(v) => vis.visit_seq(SeqAccessor::new(v)),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -308,7 +579,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Tuple(v) if len == v.len() => vis.visit_seq(SeqAccessor::new(v)),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -326,7 +597,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
                 name: vn,
                 fields: vf,
             } if name == vn && len == vf.len() => vis.visit_seq(SeqAccessor::new(vf)),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -336,7 +607,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Map(v) => vis.visit_map(MapAccessor::new(v)),
-            _ => Err(Error(anyhow!("invalid type"))),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -366,7 +637,8 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
                 }
                 vis.visit_seq(SeqAccessor::new(vs))
             }
-            _ => Err(Error(anyhow!("invalid type"))),
+            Value::Map(fields) => vis.visit_map(MapAccessor::new(fields)),
+            v => Err(Error(anyhow!("invalid type: {:?}", v))),
         }
     }
 
@@ -603,6 +875,7 @@ impl<'de> de::VariantAccess<'de> for VariantAccessor {
 
 #[cfg(test)]
 mod tests {
+    use anyhow::Result;
     use indexmap::indexmap;
 
     use super::*;
@@ -643,5 +916,23 @@ mod tests {
                 e: 4.5
             }
         )
+    }
+
+    #[test]
+    fn test_deserialize() -> Result<()> {
+        let content = r#"{
+            "a": true,
+            "b": 1,
+            "c": 2,
+            "d": "Hello, World!",
+            "e": 4.5
+        }"#;
+        let raw: TestStruct = serde_json::from_str(content)?;
+        let value: Value = serde_json::from_str(content)?;
+        println!("{:?}", value);
+
+        assert_eq!(TestStruct::from_value(value)?, raw);
+
+        Ok(())
     }
 }

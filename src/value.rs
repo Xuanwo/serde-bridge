@@ -44,7 +44,7 @@ use indexmap::IndexMap;
 /// }
 /// ```
 ///
-/// ## Transparent Serialize
+/// ## Transparent Serialize and Deserialize
 ///
 /// ```
 /// use anyhow::Result;
@@ -55,6 +55,10 @@ use indexmap::IndexMap;
 ///     let raw = serde_json::to_string(&true)?;
 ///     let value = serde_json::to_string(&true.into_value()?)?;
 ///     assert_eq!(raw, value);
+///
+///     let raw: bool = serde_json::from_str("true")?;
+///     let value: Value = serde_json::from_str("true")?;
+///     assert_eq!(raw, bool::from_value(value)?);
 ///
 ///     Ok(())
 /// }
