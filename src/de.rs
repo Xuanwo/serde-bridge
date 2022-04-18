@@ -452,6 +452,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::F32(v) => vis.visit_f32(v),
+            Value::F64(v) => vis.visit_f32(v as f32),
             v => Err(Error(anyhow!("invalid type: {:?}, expect f32", v))),
         }
     }
@@ -461,6 +462,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::F32(v) => vis.visit_f64(f64::from(v)),
             Value::F64(v) => vis.visit_f64(v),
             v => Err(Error(anyhow!("invalid type: {:?}, expect f64", v))),
         }
@@ -472,7 +474,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Char(v) => vis.visit_char(v),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect char", v))),
         }
     }
 
@@ -482,7 +484,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Str(v) => vis.visit_string(v),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect str", v))),
         }
     }
 
@@ -492,7 +494,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Str(v) => vis.visit_string(v),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect string", v))),
         }
     }
 
@@ -502,7 +504,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Bytes(v) => vis.visit_byte_buf(v),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect bytes", v))),
         }
     }
 
@@ -512,7 +514,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Bytes(v) => vis.visit_byte_buf(v),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect bytes_buf", v))),
         }
     }
 
@@ -523,7 +525,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         match self.0 {
             Value::None => vis.visit_none(),
             Value::Some(v) => vis.visit_some(Deserializer(*v)),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect option", v))),
         }
     }
 
@@ -533,7 +535,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Unit => vis.visit_unit(),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect unit", v))),
         }
     }
 
@@ -543,7 +545,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::UnitStruct(vn) if vn == name => vis.visit_unit(),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect unit struct", v))),
         }
     }
 
@@ -559,7 +561,10 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
             Value::NewtypeStruct(vn, vv) if vn == name => {
                 vis.visit_newtype_struct(Deserializer(*vv))
             }
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!(
+                "invalid type: {:?}, expect newtype struct",
+                v
+            ))),
         }
     }
 
@@ -568,8 +573,9 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
+            Value::Tuple(v) => vis.visit_seq(SeqAccessor::new(v)),
             Value::Seq(v) => vis.visit_seq(SeqAccessor::new(v)),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect seq", v))),
         }
     }
 
@@ -579,7 +585,8 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Tuple(v) if len == v.len() => vis.visit_seq(SeqAccessor::new(v)),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            Value::Seq(v) if len == v.len() => vis.visit_seq(SeqAccessor::new(v)),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect tuple", v))),
         }
     }
 
@@ -597,7 +604,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
                 name: vn,
                 fields: vf,
             } if name == vn && len == vf.len() => vis.visit_seq(SeqAccessor::new(vf)),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect tuple struct", v))),
         }
     }
 
@@ -607,7 +614,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
     {
         match self.0 {
             Value::Map(v) => vis.visit_map(MapAccessor::new(v)),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect map", v))),
         }
     }
 
@@ -638,7 +645,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
                 vis.visit_seq(SeqAccessor::new(vs))
             }
             Value::Map(fields) => vis.visit_map(MapAccessor::new(fields)),
-            v => Err(Error(anyhow!("invalid type: {:?}", v))),
+            v => Err(Error(anyhow!("invalid type: {:?}, expect struct", v))),
         }
     }
 
