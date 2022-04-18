@@ -2,10 +2,8 @@ use std::vec::IntoIter;
 
 use anyhow::anyhow;
 use indexmap::IndexMap;
-use serde::{
-    de,
-    de::{DeserializeOwned, DeserializeSeed, Visitor},
-};
+use serde::de;
+use serde::de::{DeserializeOwned, DeserializeSeed, Visitor};
 
 use crate::{Error, Value};
 
