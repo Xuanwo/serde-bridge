@@ -2,7 +2,7 @@
 authors = ["Xuanwo <github@xuanwo.io>"]
 categories = ["command-line-utilities"]
 description = "Bridge between serde types"
-documentation = "https://docs.rs/reqsign"
+documentation = "https://docs.rs/serde-bridge"
 edition = "2021"
 license = "Apache-2.0"
 name = "serde-bridge"
