@@ -7,15 +7,21 @@ use indexmap::IndexMap;
 /// Value is the one-to-one map to [serde's data format](https://serde.rs/data-model.html).
 /// Theoretically, `Value` can be converted from/to any serde format.
 ///
-/// `Value` is a inter data represents which means `Value` should be constructed or consumed
-/// by `into_value` or `from_value`.
+/// `Value` is a inter data represents which means:
+///
+/// `Value` should be constructed or consumed by `into_value` or `from_value`.
 ///
 /// - `t.into_value()` -> `Value`
 /// - `into_value(t)` -> `Value`
 /// - `T::from_value(v)` -> `T`
 /// - `from_value(v)` -> `T`
 ///
+/// `Value` also implements [`serde::Serialize`](https://docs.serde.rs/serde/trait.Serialize.html) and [`serde::Deserialize`](https://docs.serde.rs/serde/trait.Deserialize.html).
+/// `Serialize` and `Deserialize` on `Value` that converted from `T` will be the same with `T`.
+///
 /// # Examples
+///
+/// ## Conversion between `T` and `Value`
 ///
 /// ```
 /// use anyhow::Result;
@@ -33,6 +39,22 @@ use indexmap::IndexMap;
 ///
 ///     let v = into_value(true)?;
 ///     assert_eq!(v, Value::Bool(true));
+///
+///     Ok(())
+/// }
+/// ```
+///
+/// ## Transparent Serialize
+///
+/// ```
+/// use anyhow::Result;
+/// use serde_bridge::{from_value, into_value, FromValue, IntoValue, Value};
+/// use serde_json;
+///
+/// fn main() -> Result<()> {
+///     let raw = serde_json::to_string(&true)?;
+///     let value = serde_json::to_string(&true.into_value()?)?;
+///     assert_eq!(raw, value);
 ///
 ///     Ok(())
 /// }
