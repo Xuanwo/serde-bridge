@@ -50,6 +50,9 @@ where
     }
 }
 
+/// Implement transparent [`serde::Serialize`](https://docs.serde.rs/serde/trait.Serialize.html) for [`Value`].
+///
+/// `Serialize` on `Value` that converted from `T` will be the same with `T`.
 impl serde::Serialize for Value {
     fn serialize<S>(&self, s: S) -> Result<S::Ok, S::Error>
     where
