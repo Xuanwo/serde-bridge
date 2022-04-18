@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use anyhow::Result;
 use indexmap::indexmap;
@@ -14,7 +14,7 @@ struct TestStruct {
     e: f64,
     f: Vec<u8>,
     g: [u16; 3],
-    h: HashMap<String, f32>,
+    h: BTreeMap<String, f32>,
 }
 
 #[test]
@@ -27,7 +27,7 @@ fn test_to_json() -> Result<()> {
         e: 3.4,
         f: vec![6, 7, 8, 9, 10],
         g: [11, 12, 13],
-        h: HashMap::from([("a".to_string(), 10.1), ("b".to_string(), 11.3)]),
+        h: BTreeMap::from([("a".to_string(), 10.1), ("b".to_string(), 11.3)]),
     };
     let value = Value::Struct {
         name: "TestStruct",
