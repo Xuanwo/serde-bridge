@@ -174,6 +174,15 @@ pub enum Value {
     },
 }
 
+impl Value {
+    pub fn merge(self, v: Self) -> Self {
+        use Value::*;
+        match (self, v) {
+            (_, v) => v,
+        }
+    }
+}
+
 impl Eq for Value {}
 
 /// Implement Hash for Value so that we can use value as hash key.
