@@ -1,5 +1,6 @@
 use std::hash::{Hash, Hasher};
 
+use crate::Error;
 use indexmap::IndexMap;
 
 /// Value is the internal represents of serde's data format.
@@ -168,6 +169,104 @@ pub enum Value {
     },
 }
 
+impl Value {
+    /// merge will merge other value into self.
+    ///
+    /// - For non-collection values like `u64`, `i64`, `Str`, `Bytes`, we will return not merge-able errors
+    /// - For collection values like `Seq`, `Map`, we will call [`extend`](https://doc.rust-lang.org/std/iter/trait.Extend.html) internally.
+    ///
+    /// Some special cases:
+    ///
+    /// - `Tuple` related variants will be treated as non-collection values.
+    /// - `Struct` related variants will only be extended when they are the same struct.
+    ///
+    /// # Examples
+    ///
+    /// Merge non-collection values will get an error
+    ///
+    /// ```rust
+    /// use serde_bridge::Value;
+    /// use anyhow::Result;
+    ///
+    /// fn main() -> Result<()> {
+    ///     let x = Value::I64(1).merge(Value::I64(2));
+    ///     assert!(x.is_err());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// Merge a struct
+    ///
+    /// ```rust
+    /// use serde_bridge::Value;
+    /// use indexmap::indexmap;
+    /// use anyhow::Result;
+    ///
+    /// fn main() -> Result<()> {
+    ///     let left = Value::Struct("test", indexmap! {
+    ///         "a" => Value::Bool(false),
+    ///         "b" => Value::I64(128),
+    ///     });
+    ///     let right = Value::Struct("test", indexmap! {
+    ///         "a" => Value::Bool(true),
+    ///         "c" => Value::F32(4.5),
+    ///     });
+    ///     assert_eq!(left.merge(right)?, Value::Struct("test", indexmap! {
+    ///         "a" => Value::Bool(true),
+    ///         "b" => Value::I64(128),
+    ///         "c" => Value::F32(4.5),
+    ///     }));
+    ///
+    ///     Ok(())
+    /// }
+    pub fn merge(self, other: Self) -> Result<Self, Error> {
+        use Value::*;
+
+        match (self, other) {
+            (Seq(mut l), Seq(r)) => {
+                l.extend(r);
+                Ok(Value::Seq(l))
+            }
+            (Map(mut l), Map(r)) => {
+                l.extend(r);
+                Ok(Value::Map(l))
+            }
+            (Struct(ln, mut lv), Struct(rn, rv)) if ln == rn => {
+                lv.extend(rv);
+                Ok(Value::Struct(ln, lv))
+            }
+            (
+                StructVariant {
+                    name: ln,
+                    variant_index: lvi,
+                    variant: lv,
+                    fields: mut lf,
+                },
+                StructVariant {
+                    name: rn,
+                    variant_index: rvi,
+                    variant: rv,
+                    fields: rf,
+                },
+            ) if ln == rn && lvi == rvi && lv == rv => {
+                lf.extend(rf);
+                Ok(Value::StructVariant {
+                    name: ln,
+                    variant_index: lvi,
+                    variant: lv,
+                    fields: lf,
+                })
+            }
+            (l, r) => Err(Error(anyhow::anyhow!(
+                "not merge-able value: {:?} and {:?}",
+                l,
+                r
+            ))),
+        }
+    }
+}
+
 impl Eq for Value {}
 
 /// Implement Hash for Value so that we can use value as hash key.
@@ -277,9 +376,42 @@ impl Hash for Value {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use anyhow::Result;
+    use indexmap::indexmap;
 
     #[test]
     fn test_enum_size() {
         println!("Size is {}", std::mem::size_of::<Value>());
+    }
+
+    #[test]
+    fn test_value_merge() -> Result<()> {
+        let left = Value::Struct(
+            "test",
+            indexmap! {
+                "a" => Value::Bool(false),
+                "b" => Value::I64(128),
+            },
+        );
+        let right = Value::Struct(
+            "test",
+            indexmap! {
+                "a" => Value::Bool(true),
+                "c" => Value::F32(4.5),
+            },
+        );
+        assert_eq!(
+            left.merge(right)?,
+            Value::Struct(
+                "test",
+                indexmap! {
+                    "a" => Value::Bool(true),
+                    "b" => Value::I64(128),
+                    "c" => Value::F32(4.5),
+                }
+            )
+        );
+
+        Ok(())
     }
 }
