@@ -1,6 +1,5 @@
 use std::hash::{Hash, Hasher};
 
-
 use indexmap::IndexMap;
 
 /// Value is the internal represents of serde's data format.
@@ -278,8 +277,6 @@ impl Hash for Value {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    
 
     #[test]
     fn test_enum_size() {
