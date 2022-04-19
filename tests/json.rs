@@ -32,29 +32,30 @@ fn test_to_json() -> Result<()> {
     let value = Value::Struct(
         "TestStruct",
         indexmap! {
-        "a" => Value::Bool(true),
-        "b" => Value::I32(1),
-        "c" => Value::U64(2),
-        "d" => Value::Str("Hello, World!".to_string()),
-        "e" => Value::F64(3.4),
-        "f" => Value::Seq(vec![
-            Value::U8(6),
-            Value::U8(7),
-            Value::U8(8),
-            Value::U8(9),
-            Value::U8(10),
-        ]),
-        "g" => Value::Tuple(vec![
-            Value::U16(11),
-            Value::U16(12),
-            Value::U16(13),
-        ]),
-        "h" => Value::Map(
-            indexmap! {
-                Value::Str("a".to_string()) => Value::F32(10.1),
-                Value::Str("b".to_string()) => Value::F32(11.3),
-            }
-        ),},
+            "a" => Value::Bool(true),
+            "b" => Value::I32(1),
+            "c" => Value::U64(2),
+            "d" => Value::Str("Hello, World!".to_string()),
+            "e" => Value::F64(3.4),
+            "f" => Value::Seq(vec![
+                Value::U8(6),
+                Value::U8(7),
+                Value::U8(8),
+                Value::U8(9),
+                Value::U8(10),
+            ]),
+            "g" => Value::Tuple(vec![
+                Value::U16(11),
+                Value::U16(12),
+                Value::U16(13),
+            ]),
+            "h" => Value::Map(
+                indexmap! {
+                    Value::Str("a".to_string()) => Value::F32(10.1),
+                    Value::Str("b".to_string()) => Value::F32(11.3),
+                }
+            )
+        },
     );
 
     assert_eq!(serde_json::to_string(&raw)?, serde_json::to_string(&value)?);
