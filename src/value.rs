@@ -143,10 +143,7 @@ pub enum Value {
     /// For example `(u8,)` or `(String, u64, Vec<T>)` or `[u64; 10]`.
     Tuple(Vec<Value>),
     /// A named tuple, for example `struct Rgb(u8, u8, u8)`.
-    TupleStruct {
-        name: &'static str,
-        fields: Vec<Value>,
-    },
+    TupleStruct(&'static str, Vec<Value>),
     /// For example the `E::T` in `enum E { T(u8, u8) }`.
     TupleVariant {
         name: &'static str,
@@ -161,10 +158,7 @@ pub enum Value {
     /// serialized data.
     ///
     /// For example `struct S { r: u8, g: u8, b: u8 }`.
-    Struct {
-        name: &'static str,
-        fields: IndexMap<&'static str, Value>,
-    },
+    Struct(&'static str, IndexMap<&'static str, Value>),
     /// For example the `E::S` in `enum E { S { r: u8, g: u8, b: u8 } }`.
     StructVariant {
         name: &'static str,
@@ -246,7 +240,7 @@ impl Hash for Value {
             }
             Value::Seq(v) => v.hash(state),
             Value::Tuple(v) => v.hash(state),
-            Value::TupleStruct { name, fields } => {
+            Value::TupleStruct(name, fields) => {
                 name.hash(state);
                 fields.hash(state);
             }
@@ -266,7 +260,7 @@ impl Hash for Value {
                     e.hash(state)
                 }
             }
-            Value::Struct { name, fields } => {
+            Value::Struct(name, fields) => {
                 name.hash(state);
                 for e in fields {
                     e.hash(state)

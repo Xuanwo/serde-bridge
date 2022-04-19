@@ -29,9 +29,9 @@ fn test_to_json() -> Result<()> {
         g: [11, 12, 13],
         h: BTreeMap::from([("a".to_string(), 10.1), ("b".to_string(), 11.3)]),
     };
-    let value = Value::Struct {
-        name: "TestStruct",
-        fields: indexmap! {
+    let value = Value::Struct(
+        "TestStruct",
+        indexmap! {
             "a" => Value::Bool(true),
             "b" => Value::I32(1),
             "c" => Value::U64(2),
@@ -56,7 +56,7 @@ fn test_to_json() -> Result<()> {
                 }
             )
         },
-    };
+    );
 
     assert_eq!(serde_json::to_string(&raw)?, serde_json::to_string(&value)?);
 

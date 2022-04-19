@@ -600,10 +600,9 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
-            Value::TupleStruct {
-                name: vn,
-                fields: vf,
-            } if name == vn && len == vf.len() => vis.visit_seq(SeqAccessor::new(vf)),
+            Value::TupleStruct(vn, vf) if name == vn && len == vf.len() => {
+                vis.visit_seq(SeqAccessor::new(vf))
+            }
             v => Err(Error(anyhow!("invalid type: {:?}, expect tuple struct", v))),
         }
     }
@@ -628,10 +627,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         match self.0 {
-            Value::Struct {
-                name: vn,
-                fields: mut vf,
-            } if vn == name => {
+            Value::Struct(vn, mut vf) if vn == name => {
                 let mut vs = Vec::with_capacity(fields.len());
                 for key in fields {
                     // Use `remove` instead of `get` & `clone` here.
@@ -862,7 +858,7 @@ impl<'de> de::VariantAccess<'de> for VariantAccessor {
         V: Visitor<'de>,
     {
         match self.value {
-            Value::Struct { fields: mut vf, .. } => {
+            Value::Struct(_, mut vf) => {
                 let mut vs = Vec::with_capacity(fields.len());
                 for key in fields {
                     // Use `remove` instead of `get` & `clone` here.
@@ -902,16 +898,16 @@ mod tests {
         let v: bool = from_value(Value::Bool(true)).expect("must success");
         assert!(v);
 
-        let v: TestStruct = from_value(Value::Struct {
-            name: "TestStruct",
-            fields: indexmap! {
+        let v: TestStruct = from_value(Value::Struct(
+            "TestStruct",
+            indexmap! {
                 "a" => Value::Bool(true),
                 "b" => Value::I32(1),
                 "c" => Value::U64(2),
                 "d" => Value::Str("Hello, World!".to_string()),
                 "e" => Value::F64(4.5)
             },
-        })
+        ))
         .expect("must success");
         assert_eq!(
             v,
