@@ -105,7 +105,7 @@ impl serde::Serialize for Value {
                 }
                 tuple.end()
             }
-            Value::TupleStruct { name, fields } => {
+            Value::TupleStruct(name, fields) => {
                 let mut se = s.serialize_tuple_struct(name, fields.len())?;
                 for i in fields {
                     se.serialize_field(i)?;
@@ -132,7 +132,7 @@ impl serde::Serialize for Value {
                 }
                 se.end()
             }
-            Value::Struct { name, fields } => {
+            Value::Struct(name, fields) => {
                 let mut se = s.serialize_struct(name, fields.len())?;
                 for (k, v) in fields {
                     se.serialize_field(k, v)?;
@@ -436,10 +436,7 @@ impl ser::SerializeTupleStruct for TupleStructSerializer {
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(Value::TupleStruct {
-            name: self.name,
-            fields: self.fields,
-        })
+        Ok(Value::TupleStruct(self.name, self.fields))
     }
 }
 
@@ -565,10 +562,7 @@ impl ser::SerializeStruct for StructSerializer {
     }
 
     fn end(self) -> Result<Self::Ok, Self::Error> {
-        Ok(Value::Struct {
-            name: self.name,
-            fields: self.fields,
-        })
+        Ok(Value::Struct(self.name, self.fields))
     }
 }
 
@@ -647,16 +641,16 @@ mod tests {
                 e: 4.5
             })
             .expect("must success"),
-            Value::Struct {
-                name: "TestStruct",
-                fields: indexmap! {
+            Value::Struct(
+                "TestStruct",
+                indexmap! {
                     "a" => Value::Bool(true),
                     "b" => Value::I32(1),
                     "c" => Value::U64(2),
                     "d" => Value::Str("Hello, World!".to_string()),
                     "e" => Value::F64(4.5)
                 }
-            }
+            )
         )
     }
 
@@ -669,16 +663,16 @@ mod tests {
             d: "Hello, World!".to_string(),
             e: 4.5,
         };
-        let value = Value::Struct {
-            name: "TestStruct",
-            fields: indexmap! {
+        let value = Value::Struct(
+            "TestStruct",
+            indexmap! {
                 "a" => Value::Bool(true),
                 "b" => Value::I32(1),
                 "c" => Value::U64(2),
                 "d" => Value::Str("Hello, World!".to_string()),
                 "e" => Value::F64(4.5)
             },
-        };
+        );
 
         assert_eq!(serde_json::to_string(&raw)?, serde_json::to_string(&value)?);
 
