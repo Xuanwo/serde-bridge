@@ -280,7 +280,10 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
             Value::None => self.deserialize_option(vis),
             Value::Some(_) => self.deserialize_option(vis),
             Value::Unit => self.deserialize_unit(vis),
-            _ => unimplemented!(),
+            Value::Map(_) => self.deserialize_map(vis),
+            Value::Seq(_) => self.deserialize_seq(vis),
+            Value::Struct(_, _) => self.deserialize_map(vis),
+            v => unimplemented!("deserialize_any for {:?}", v),
         }
     }
 
