@@ -7,7 +7,7 @@ repository = "https://github.com/Xuanwo/serde-bridge"
 edition = "2021"
 license = "Apache-2.0"
 name = "serde-bridge"
-version = "0.0.2"
+version = "0.0.3"
 
 [dependencies]
 indexmap = "1.8.1"
