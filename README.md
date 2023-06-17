@@ -1,9 +1,11 @@
-# serde-bridge &emsp; [![Build Status]][actions] [![Latest Version]][crates.io]
+# serde-bridge &emsp; [![Build Status]][actions] [![Latest Version]][crates.io] [![chat]][discord]
 
-[Build Status]: https://img.shields.io/github/workflow/status/Xuanwo/serde-bridge/CI/main
+[Build Status]: https://img.shields.io/github/actions/workflow/status/Xuanwo/serde-bridge/ci.yml?branch=main
 [actions]: https://github.com/Xuanwo/serde-bridge/actions?query=branch%3Amain
 [Latest Version]: https://img.shields.io/crates/v/serde-bridge.svg
 [crates.io]: https://crates.io/crates/serde-bridge
+[chat]: https://img.shields.io/discord/1111711408875393035
+[discord]: https://discord.gg/bmczSs2C69
 
 Bridge between serde types
 
