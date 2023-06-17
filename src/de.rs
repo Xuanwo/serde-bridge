@@ -826,7 +826,7 @@ impl<'de> de::VariantAccess<'de> for VariantAccessor {
     fn unit_variant(self) -> Result<(), Self::Error> {
         match self.value {
             Value::UnitVariant { .. } => Ok(()),
-            _ => return Err(Error(anyhow!("invalid type"))),
+            _ => Err(Error(anyhow!("invalid type"))),
         }
     }
 
@@ -836,7 +836,7 @@ impl<'de> de::VariantAccess<'de> for VariantAccessor {
     {
         match self.value {
             Value::NewtypeVariant { value, .. } => Ok(seed.deserialize(Deserializer(*value))?),
-            _ => return Err(Error(anyhow!("invalid type"))),
+            _ => Err(Error(anyhow!("invalid type"))),
         }
     }
 
@@ -848,7 +848,7 @@ impl<'de> de::VariantAccess<'de> for VariantAccessor {
             Value::TupleVariant { fields, .. } if len == fields.len() => {
                 vis.visit_seq(SeqAccessor::new(fields))
             }
-            _ => return Err(Error(anyhow!("invalid type"))),
+            _ => Err(Error(anyhow!("invalid type"))),
         }
     }
 
