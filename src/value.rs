@@ -179,7 +179,7 @@ impl Eq for Value {}
 /// ## FIXME
 ///
 /// does this implementation correct?
-#[allow(clippy::derive_hash_xor_eq)]
+#[allow(clippy::derived_hash_with_manual_eq)]
 impl Hash for Value {
     fn hash<H: Hasher>(&self, state: &mut H) {
         // Write current enum discriminant into state.
