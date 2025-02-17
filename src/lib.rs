@@ -27,7 +27,7 @@ mod value;
 pub use value::Value;
 
 mod de;
-pub use de::{from_value, FromValue};
+pub use de::{from_value, Deserializer, FromValue};
 
 mod ser;
 pub use ser::{into_value, IntoValue};

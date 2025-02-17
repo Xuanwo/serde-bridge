@@ -251,7 +251,7 @@ impl<'de> Deserialize<'de> for Value {
     }
 }
 
-struct Deserializer(Value);
+pub struct Deserializer(Value);
 
 impl<'de> serde::Deserializer<'de> for Deserializer {
     type Error = Error;
@@ -672,6 +672,12 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
         V: Visitor<'de>,
     {
         self.deserialize_any(vis)
+    }
+}
+
+impl From<Value> for Deserializer {
+    fn from(v: Value) -> Self {
+        Self(v)
     }
 }
 
