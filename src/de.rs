@@ -636,7 +636,7 @@ impl<'de> serde::Deserializer<'de> for Deserializer {
                     // Use `remove` instead of `get` & `clone` here.
                     // - As serde will make sure to not access the same field twice.
                     // - The order of key is not needed to preserve during deserialize.
-                    match vf.remove(key) {
+                    match vf.shift_remove(key) {
                         Some(v) => vs.push(v),
                         None => return Err(Error(anyhow!("field not exist"))),
                     }
@@ -867,7 +867,7 @@ impl<'de> de::VariantAccess<'de> for VariantAccessor {
                     // Use `remove` instead of `get` & `clone` here.
                     // - As serde will make sure to not access the same field twice.
                     // - The order of key is not needed to preserve during deserialize.
-                    match vf.remove(key) {
+                    match vf.shift_remove(key) {
                         Some(v) => vs.push(v),
                         None => return Err(Error(anyhow!("field not exist"))),
                     }
